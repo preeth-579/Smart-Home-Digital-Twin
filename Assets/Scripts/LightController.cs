@@ -3,8 +3,11 @@ using UnityEngine.InputSystem;
 
 public class LightController : MonoBehaviour
 {
-    [Header("Light Settings")]
-    public Light roomLight;
+    [Header("Smart Home Lights")]
+    public Light[] roomLights;
+
+    [Header("Directional / Sun Light")]
+    public Light directionalLight;
 
     [Range(0f, 100f)]
     public float threshold = 30f;
@@ -13,8 +16,8 @@ public class LightController : MonoBehaviour
     public float onIntensity = 5f;
     public float offIntensity = 0f;
 
-    [Header("Bulb Visual")]
-    public Renderer lightBulbRenderer;
+    [Header("Bulb Visuals")]
+    public Renderer[] lightBulbRenderers;
 
     [ColorUsage(true, true)]
     public Color emissionColor = new Color(1f, 0.7f, 0.3f);
@@ -22,17 +25,25 @@ public class LightController : MonoBehaviour
     public float emissionOnIntensity = 3f;
     public float emissionOffIntensity = 0f;
 
-    private Material bulbMaterial;
+    private Material[] bulbMaterials;
 
-    void Start()
+    private void Start()
     {
-        // Create a material instance so we don't modify the original asset
-        if (lightBulbRenderer != null)
+        // Create material instances for all bulbs
+        if (lightBulbRenderers != null)
         {
-            bulbMaterial = lightBulbRenderer.material;
+            bulbMaterials = new Material[lightBulbRenderers.Length];
+
+            for (int i = 0; i < lightBulbRenderers.Length; i++)
+            {
+                if (lightBulbRenderers[i] != null)
+                {
+                    bulbMaterials[i] = lightBulbRenderers[i].material;
+                }
+            }
         }
 
-        // Start with the light OFF
+        // Start with smart lights OFF
         SetVisualState(false);
     }
 
@@ -42,80 +53,115 @@ public class LightController : MonoBehaviour
 
         if (ldrValue < threshold)
         {
-            TurnLightOn();
+            TurnLightsOn();
         }
         else
         {
-            TurnLightOff();
+            TurnLightsOff();
         }
     }
 
-    private void TurnLightOn()
+    private void TurnLightsOn()
     {
         SetVisualState(true);
 
-        Debug.Log("💡 Living Room Light: ON");
+        Debug.Log("💡 All Smart Lights: ON");
+        Debug.Log("☀️ Directional Light: OFF");
     }
 
-    private void TurnLightOff()
+    private void TurnLightsOff()
     {
         SetVisualState(false);
 
-        Debug.Log("💡 Living Room Light: OFF");
+        Debug.Log("💡 All Smart Lights: OFF");
+        Debug.Log("☀️ Directional Light: ON");
     }
 
     private void SetVisualState(bool isOn)
     {
-        // Control actual Unity light
-        if (roomLight != null)
-        {
-            roomLight.enabled = isOn;
+        // --------------------------------
+        // SMART HOME LIGHTS
+        // --------------------------------
 
-            if (isOn)
+        if (roomLights != null)
+        {
+            foreach (Light roomLight in roomLights)
             {
-                roomLight.intensity = onIntensity;
-            }
-            else
-            {
-                roomLight.intensity = offIntensity;
+                if (roomLight != null)
+                {
+                    roomLight.enabled = isOn;
+
+                    if (isOn)
+                    {
+                        roomLight.intensity = onIntensity;
+                    }
+                    else
+                    {
+                        roomLight.intensity = offIntensity;
+                    }
+                }
             }
         }
 
-        // Control bulb emission
-        if (bulbMaterial != null)
+        // --------------------------------
+        // BULB EMISSION
+        // --------------------------------
+
+        if (bulbMaterials != null)
         {
-            if (isOn)
+            foreach (Material bulbMaterial in bulbMaterials)
             {
-                bulbMaterial.EnableKeyword("_EMISSION");
+                if (bulbMaterial == null)
+                    continue;
 
-                bulbMaterial.SetColor(
-                    "_EmissionColor",
-                    emissionColor * emissionOnIntensity
-                );
-            }
-            else
-            {
-                bulbMaterial.DisableKeyword("_EMISSION");
+                if (isOn)
+                {
+                    bulbMaterial.EnableKeyword("_EMISSION");
 
-                bulbMaterial.SetColor(
-                    "_EmissionColor",
-                    emissionColor * emissionOffIntensity
-                );
+                    bulbMaterial.SetColor(
+                        "_EmissionColor",
+                        emissionColor * emissionOnIntensity
+                    );
+                }
+                else
+                {
+                    bulbMaterial.DisableKeyword("_EMISSION");
+
+                    bulbMaterial.SetColor(
+                        "_EmissionColor",
+                        emissionColor * emissionOffIntensity
+                    );
+                }
             }
+        }
+
+        // --------------------------------
+        // DIRECTIONAL LIGHT
+        // --------------------------------
+
+        if (directionalLight != null)
+        {
+            // Smart lights ON → Directional light OFF
+            // Smart lights OFF → Directional light ON
+
+            directionalLight.enabled = !isOn;
         }
     }
-    void Update()
+
+    private void Update()
     {
         if (Keyboard.current != null)
         {
+            // L = Smart Lights ON
             if (Keyboard.current.lKey.wasPressedThisFrame)
             {
-                TurnLightOn();
+                TurnLightsOn();
             }
 
+            // O = Smart Lights OFF
             if (Keyboard.current.oKey.wasPressedThisFrame)
             {
-                TurnLightOff();
+                TurnLightsOff();
             }
         }
     }

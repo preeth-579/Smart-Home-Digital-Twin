@@ -2,8 +2,8 @@ using UnityEngine;
 
 public class FanController : MonoBehaviour
 {
-    [Header("Fan")]
-    public Transform fanBlades;
+    [Header("Fans")]
+    public Transform[] fanBlades;
 
     [Header("Temperature Settings")]
     public float temperatureThreshold = 20f;
@@ -13,15 +13,21 @@ public class FanController : MonoBehaviour
 
     private bool fanOn = false;
 
-    void Update()
+    private void Update()
     {
         if (fanOn && fanBlades != null)
         {
-            // Reverse rotation direction
-            fanBlades.Rotate(
-                Vector3.up,
-                rotationSpeed * Time.deltaTime
-            );
+            foreach (Transform fan in fanBlades)
+            {
+                if (fan != null)
+                {
+                    // Rotate both fans around Y axis
+                    fan.Rotate(
+                        Vector3.up,
+                        rotationSpeed * Time.deltaTime
+                    );
+                }
+            }
         }
     }
 
@@ -31,29 +37,33 @@ public class FanController : MonoBehaviour
 
         if (temperature > temperatureThreshold)
         {
-            TurnFanOn();
+            TurnFansOn();
         }
         else
         {
-            TurnFanOff();
+            TurnFansOff();
         }
     }
 
-    private void TurnFanOn()
+    private void TurnFansOn()
     {
         if (!fanOn)
         {
             fanOn = true;
-            Debug.Log("🌀 Fan: ON");
+
+            Debug.Log("🌀 Fan 1: ON");
+            Debug.Log("🌀 Fan 2: ON");
         }
     }
 
-    private void TurnFanOff()
+    private void TurnFansOff()
     {
         if (fanOn)
         {
             fanOn = false;
-            Debug.Log("🌀 Fan: OFF");
+
+            Debug.Log("🌀 Fan 1: OFF");
+            Debug.Log("🌀 Fan 2: OFF");
         }
     }
 }
